@@ -1,15 +1,4 @@
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.*;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -31,53 +20,38 @@ import twitter4j.auth.*;
 import twitter4j.conf.*;
 
 public class crawler {
-	
-	
+
+	public static Jodel client;
 	public static String accessToken = "";
 	public static List<String> history = new LinkedList<String>();
-	
+
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
 		String lol = System.getProperty("user.dir");
-		
-		//getting access token in a file cuz github...
-		BufferedReader reader = new BufferedReader(new FileReader("token.txt"));
-		accessToken = reader.readLine();
-		reader.close();
-		 
-		
-		while (true) {
-			jodelFetcher();
-			Thread.sleep(20000);
+
+		try {
+			JodelLocation loc = new JodelLocation("Munich", 48.1410, 11.5727, "DE");
+			accessToken = new JodelAuth("cf8a166c8de95836ab0899cfecae1b4af3c7c82fc34a72d1554498da82f0763d", loc).RequestAccessToken();
+			client = new Jodel(accessToken);
+			client.getDistinctID();
+			client.putLocation(loc);
+
+			while (true) {
+				jodelFetcher();
+				Thread.sleep(20000);
+			}
+
+		} catch (Exception ex) {
+			log("Main Exception: " + ex);
 		}
 	}
 
 	public static void jodelFetcher() throws Exception {
 
 		try {
-			URL url = new URL("https://api.go-tellm.com/api/v2/posts/");
-			HttpURLConnection urlConnection = (HttpURLConnection) url
-					.openConnection();
-			urlConnection.setRequestProperty("Authorization", "Bearer "
-					+ accessToken);
-			urlConnection.setRequestMethod("GET");
-			
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					urlConnection.getInputStream(), StandardCharsets.UTF_8));
+			JSONArray jArray = client.getPosts().getJSONArray("posts");
+			log(jArray.toString());
 
-			StringBuilder sb = new StringBuilder();
-
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line + "\n");
-			}
-			reader.close();
-			String result = sb.toString();
-
-			JSONObject jObject = new JSONObject(result);
-			JSONArray jArray = jObject.getJSONArray("posts");
-				log(jArray.toString());
-			
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 
@@ -88,33 +62,27 @@ public class crawler {
 				// Pulling items from the array
 				String message = oneObject.getString("message");
 				Date createTime = sdf.parse(oneObject.getString("created_at"));
-				boolean inRange = now.getTime() - createTime.getTime() <  60 * 60 * 1000;
+				boolean inRange = now.getTime() - createTime.getTime() < 10 * 60 * 1000;
 
-				
-				if (message.length() < 140 && inRange && !oneObject.has("image_url")) {
-						//twitter(message);
+				if (message.length() < 140 && inRange
+						&& !oneObject.has("image_url")) {
+					twitter(message);
 				} else if (oneObject.has("image_url")) {
-						log(oneObject.toString());
-						String imageURL = "http:" + oneObject.getString("image_url");
+					String imageURL = "http:"
+							+ oneObject.getString("image_url");
 
-						URL Imageurl = new URL(imageURL);
-						InputStream in = new BufferedInputStream(
-								Imageurl.openStream());
+					URL Imageurl = new URL(imageURL);
+					InputStream in = new BufferedInputStream(
+							Imageurl.openStream());
 
-						
-
-						int maxLength = (message.length() < 139) ? message
-								.length() : 139;
-						message = message.substring(0, maxLength);
-
-						picture(message, in);
-						in.close();
+					picture(message, in);
+					in.close();
 				}
 
 			}
 
 		} catch (Exception e) {
-			log("Parse Exception: "+ e);
+			log("Parse Exception: " + e);
 		}
 	}
 
@@ -123,26 +91,27 @@ public class crawler {
 
 		if (history.contains(message))
 			return;
-		
+
 		history.add(message);
-			
+
 		Twitter twitter = TwitterFactory.getSingleton();
-		
-		StatusUpdate status = new StatusUpdate(message);
+
+		StatusUpdate status = new StatusUpdate("Jodel Bild"); // message would
+																// only contain
+																// a timestamp
 		status.setMedia("bild.png", bild); // set the image to be uploaded here.
-		
-		twitter.updateStatus(status);
-		
-		log("Posted: " +  message);
+
+		// twitter.updateStatus(status);
+
+		log("Posted: " + message);
 	}
 
 	public static void twitter(String message) {
 
 		try {
 
-			
 			Twitter twitter = TwitterFactory.getSingleton();
-			
+
 			try {
 				// get request token.
 				// this will throw IllegalStateException if access token is
@@ -150,8 +119,7 @@ public class crawler {
 				RequestToken requestToken = twitter.getOAuthRequestToken();
 				log("Got request token.");
 				log("Request token: " + requestToken.getToken());
-				log("Request token secret: "
-						+ requestToken.getTokenSecret());
+				log("Request token secret: " + requestToken.getTokenSecret());
 				AccessToken accessToken = null;
 
 				BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -177,8 +145,7 @@ public class crawler {
 				}
 				log("Got access token.");
 				log("Access token: " + accessToken.getToken());
-				log("Access token secret: "
-						+ accessToken.getTokenSecret());
+				log("Access token secret: " + accessToken.getTokenSecret());
 			} catch (IllegalStateException ie) {
 				// access token is already available, or consumer key/secret is
 				// not set.
@@ -187,14 +154,14 @@ public class crawler {
 					System.exit(-1);
 				}
 			}
-			
+
 			if (history.contains(message))
 				return;
-			
+
 			history.add(message);
-			Status status = twitter.updateStatus(message);
-			log("Posted: " +  message);
-			
+			// twitter.updateStatus(message);
+			log("Posted: " + message);
+
 		} catch (TwitterException te) {
 			te.printStackTrace();
 			log("Failed to get timeline: " + te.getMessage());
@@ -207,18 +174,20 @@ public class crawler {
 	}
 
 	public static PrintWriter fileStream;
+
 	@SuppressWarnings("deprecation")
 	public static void log(String line) {
-	    Date now = new Date();
-		line = String.format("%d:%d %s", now.getHours(), now.getMinutes(), line);
-		
+		Date now = new Date();
+		line = String
+				.format("%d:%d %s", now.getHours(), now.getMinutes(), line);
+
 		System.out.println(line);
 
-		try {	
+		try {
 			if (fileStream == null) {
-				fileStream = new PrintWriter(new FileOutputStream("log.txt"));		
+				fileStream = new PrintWriter(new FileOutputStream("log.txt"));
 			}
-			
+
 			fileStream.append(line + "\n");
 			fileStream.flush();
 
