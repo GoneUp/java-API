@@ -1,8 +1,9 @@
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.*;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,6 +38,14 @@ public class crawler {
 	
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
+		String lol = System.getProperty("user.dir");
+		
+		//getting access token in a file cuz github...
+		BufferedReader reader = new BufferedReader(new FileReader("token.txt"));
+		accessToken = reader.readLine();
+		reader.close();
+		 
+		
 		while (true) {
 			jodelFetcher();
 			Thread.sleep(20000);
@@ -67,7 +76,8 @@ public class crawler {
 
 			JSONObject jObject = new JSONObject(result);
 			JSONArray jArray = jObject.getJSONArray("posts");
-
+				log(jArray.toString());
+			
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 
@@ -77,47 +87,38 @@ public class crawler {
 				JSONObject oneObject = jArray.getJSONObject(i);
 				// Pulling items from the array
 				String message = oneObject.getString("message");
-				// log(i);
-				if (oneObject.has("thumbnail_url")) {
-					Date d = sdf.parse(oneObject.getString("created_at"));
-					if (now.getTime() - d.getTime() < 30 * 1000) {
-						String imageURL = "http:" + oneObject.getString("thumbnail_url");
+				Date createTime = sdf.parse(oneObject.getString("created_at"));
+				boolean inRange = now.getTime() - createTime.getTime() <  60 * 60 * 1000;
+
+				
+				if (message.length() < 140 && inRange && !oneObject.has("image_url")) {
+						//twitter(message);
+				} else if (oneObject.has("image_url")) {
+						log(oneObject.toString());
+						String imageURL = "http:" + oneObject.getString("image_url");
 
 						URL Imageurl = new URL(imageURL);
 						InputStream in = new BufferedInputStream(
 								Imageurl.openStream());
-						OutputStream out = new BufferedOutputStream(
-								new FileOutputStream("./tmp.jpeg"));
 
-						for (int i1; (i1 = in.read()) != -1;) {
-							out.write(i1);
-						}
-						in.close();
-						out.close();
+						
 
 						int maxLength = (message.length() < 139) ? message
 								.length() : 139;
 						message = message.substring(0, maxLength);
 
-						picture(message, "./tmp.jpeg");
-					}
-				}
-
-				else if (message.length() < 140) {
-					Date d = sdf.parse(oneObject.getString("created_at"));
-					//last five mins
-					if (now.getTime() - d.getTime() < 5 * 60 * 1000) { 
-						twitter(message);
-					}
+						picture(message, in);
+						in.close();
 				}
 
 			}
 
 		} catch (Exception e) {
+			log("Parse Exception: "+ e);
 		}
 	}
 
-	public static void picture(String message, String pfad)
+	public static void picture(String message, InputStream bild)
 			throws TwitterException {
 
 		if (history.contains(message))
@@ -126,10 +127,10 @@ public class crawler {
 		history.add(message);
 			
 		Twitter twitter = TwitterFactory.getSingleton();
-		File file = new File(pfad);
 		
 		StatusUpdate status = new StatusUpdate(message);
-		status.setMedia(file); // set the image to be uploaded here.
+		status.setMedia("bild.png", bild); // set the image to be uploaded here.
+		
 		twitter.updateStatus(status);
 		
 		log("Posted: " +  message);

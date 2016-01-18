@@ -1,4 +1,6 @@
 twitter4j.properties
+token.txt
+
 *.class
 
 # Mobile Tools for Java (J2ME)
