@@ -1,3 +1,4 @@
+package jodel;
 //snippet https://stackoverflow.com/questions/41107/how-to-generate-a-random-alpha-numeric-string
 
 import java.util.Random;

@@ -1,4 +1,1 @@
-13:0 Started knbot
-13:0 
-13:0 Parse Exception: java.io.FileNotFoundException: https://api.go-tellm.com/api/v2/posts/place
-13:1 Parse Exception: java.io.FileNotFoundException: https://api.go-tellm.com/api/v2/posts/place
+3:13 Started knbot

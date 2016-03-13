@@ -1,13 +1,23 @@
+package jodel;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
-import java.util.Date;
+import java.util.*;
+import java.util.Formatter;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
+
+import jodel.api.Jodel;
+import jodel.api.JodelAuth;
+import jodel.api.JodelCrypto;
+import jodel.api.JodelLocation;
 
 import org.json.*;
 
@@ -19,22 +29,36 @@ import twitter4j.TwitterFactory;
 import twitter4j.auth.*;
 import twitter4j.conf.*;
 
-public class crawler {
+public class Crawler {
 
 	public static Jodel client;
+	public static String uid = "";
 	public static String accessToken = "";
 	public static List<String> history = new LinkedList<String>();
 
+	public static JodelLocation mun = new JodelLocation("Munich", 11.5727,
+			48.1410, "DE");
+	public static JodelLocation kn = new JodelLocation("Konstanz", 9.171299,
+			47.667856, "DE");
+
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
-		String lol = System.getProperty("user.dir");
-
 		try {
-			JodelLocation loc = new JodelLocation("Munich", 48.1410, 11.5727, "DE");
-			accessToken = new JodelAuth("cf8a166c8de95836ab0899cfecae1b4af3c7c82fc34a72d1554498da82f0763d", loc).RequestAccessToken();
+
+			if (args.length == 1) {
+				// Preset accessToken
+				accessToken = args[0];
+			} else {
+				// generate random uid, get accesstoken from server
+				MessageDigest md = MessageDigest.getInstance("SHA-256");
+				md.update("test1".getBytes("UTF-8"));
+				uid = String.format("%064x",
+						new java.math.BigInteger(1, md.digest()));
+
+				accessToken = new JodelAuth(uid, kn).RequestAccessToken();
+			}
+
 			client = new Jodel(accessToken);
-			client.getDistinctID();
-			client.putLocation(loc);
 
 			while (true) {
 				jodelFetcher();
@@ -49,20 +73,32 @@ public class crawler {
 	public static void jodelFetcher() throws Exception {
 
 		try {
-			JSONArray jArray = client.getPosts().getJSONArray("posts");
-			log(jArray.toString());
+			JSONObject jObj = client.getPosts(kn); // Real Location is set here!
+
+			JSONArray jArray = null;
+			if (jObj.has("posts"))
+				jObj.getJSONArray("posts");
+			if (jObj.has("recent"))
+				jArray = jObj.getJSONArray("recent");
+			if (jArray == null)
+				return;
+
+			// log(jArray.toString());
 
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 
 			Date now = new Date();
+			Calendar cal = Calendar.getInstance();
+			cal.setTimeZone(TimeZone.getTimeZone("GMT"));
+			cal.setTime(now);
 
 			for (int i = 0; i < jArray.length(); i++) {
 				JSONObject oneObject = jArray.getJSONObject(i);
 				// Pulling items from the array
 				String message = oneObject.getString("message");
 				Date createTime = sdf.parse(oneObject.getString("created_at"));
-				boolean inRange = now.getTime() - createTime.getTime() < 10 * 60 * 1000;
+				boolean inRange = (now.getTime() - createTime.getTime()) < 10 * 60 * 1000;
 
 				if (message.length() < 140 && inRange
 						&& !oneObject.has("image_url")) {
@@ -100,8 +136,7 @@ public class crawler {
 																// only contain
 																// a timestamp
 		status.setMedia("bild.png", bild); // set the image to be uploaded here.
-
-		// twitter.updateStatus(status);
+		twitter.updateStatus(status);
 
 		log("Posted: " + message);
 	}
@@ -159,7 +194,7 @@ public class crawler {
 				return;
 
 			history.add(message);
-			// twitter.updateStatus(message);
+			twitter.updateStatus(message);
 			log("Posted: " + message);
 
 		} catch (TwitterException te) {

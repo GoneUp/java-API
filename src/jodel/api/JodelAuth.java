@@ -1,3 +1,4 @@
+package jodel.api;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -6,6 +7,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import jodel.RandomString;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,8 +24,8 @@ public class JodelAuth {
 	
 	//{"access_token":"xx","refresh_token":"c284d121-2ce1-4358-955e-95ae45a2c66c","token_type":"bearer","expires_in":604800,"expiration_date":1453677510,"distinct_id":"5695fd1f8a22f0d304bbabc0","returning":true}
 
-	private String clientid = "81e8a76e-1e02-4d17-9ba0-8a7020261b26";
-	private String uid;
+	public static final String clientid = "81e8a76e-1e02-4d17-9ba0-8a7020261b26";
+	private final String uid;
 
 	private JodelLocation loc;
 	
@@ -51,7 +54,7 @@ public class JodelAuth {
 		String charset = StandardCharsets.UTF_8.name(); 
 		System.out.println(content);
 		
-		URL url = new URL("https://api.go-tellm.com/api/v2/users/");
+		URL url = new URL("http://api.go-tellm.com/api/v2/users/");
 		HttpURLConnection urlConnection = (HttpURLConnection) url
 				.openConnection();
 		urlConnection.setDoOutput(true); 

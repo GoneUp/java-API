@@ -1,3 +1,4 @@
+package jodel.api;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,7 +25,7 @@ public class JodelLocation {
 		jsonLocInner.put("lng", lng);
 		
 		JSONObject jsonLoc = new JSONObject();
-		jsonLoc.put("loc_accuracy", 10);
+		jsonLoc.put("loc_accuracy", 20.1);
 		jsonLoc.put("city", city);
 		jsonLoc.put("country", country);
 		jsonLoc.put("loc_coordinates", jsonLocInner);
