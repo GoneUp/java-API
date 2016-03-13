@@ -1,6 +1,7 @@
 package jodel;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -8,11 +9,6 @@ import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.Formatter;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 import jodel.api.Jodel;
 import jodel.api.JodelAuth;
@@ -31,16 +27,19 @@ import twitter4j.conf.*;
 
 public class Crawler {
 
+	public static long crawelTimespan = 10 * 60 * 1000; // 10 min
 	public static Jodel client;
 	public static String uid = "";
 	public static String accessToken = "";
-	public static List<String> history = new LinkedList<String>();
+	public static Map<String, Long> history = new TreeMap<>();
 
 	public static JodelLocation mun = new JodelLocation("Munich", 11.5727,
 			48.1410, "DE");
 	public static JodelLocation kn = new JodelLocation("Konstanz", 9.171299,
 			47.667856, "DE");
 
+	private static boolean DEBUG = false;
+	
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
 		try {
@@ -51,7 +50,7 @@ public class Crawler {
 			} else {
 				// generate random uid, get accesstoken from server
 				MessageDigest md = MessageDigest.getInstance("SHA-256");
-				md.update("test1".getBytes("UTF-8"));
+				md.update("test2".getBytes("UTF-8"));
 				uid = String.format("%064x",
 						new java.math.BigInteger(1, md.digest()));
 
@@ -59,9 +58,11 @@ public class Crawler {
 			}
 
 			client = new Jodel(accessToken);
+			twitterLogin();
 
 			while (true) {
 				jodelFetcher();
+				cleanHistory();
 				Thread.sleep(20000);
 			}
 
@@ -73,6 +74,7 @@ public class Crawler {
 	public static void jodelFetcher() throws Exception {
 
 		try {
+			// get posts
 			JSONObject jObj = client.getPosts(kn); // Real Location is set here!
 
 			JSONArray jArray = null;
@@ -85,6 +87,7 @@ public class Crawler {
 
 			// log(jArray.toString());
 
+			// time stuff
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 
@@ -98,123 +101,137 @@ public class Crawler {
 				// Pulling items from the array
 				String message = oneObject.getString("message");
 				Date createTime = sdf.parse(oneObject.getString("created_at"));
-				boolean inRange = (now.getTime() - createTime.getTime()) < 10 * 60 * 1000;
+				boolean inRange = (now.getTime() - createTime.getTime()) < crawelTimespan;
 
-				if (message.length() < 140 && inRange
-						&& !oneObject.has("image_url")) {
-					twitter(message);
-				} else if (oneObject.has("image_url")) {
-					String imageURL = "http:"
-							+ oneObject.getString("image_url");
+				if (inRange) {
+					// already posted?
+					if (oneObject.has("image_url")) 
+						message = "http:"	+ oneObject.getString("image_url");
+					
+					if (history.containsKey(message))
+						return;
 
-					URL Imageurl = new URL(imageURL);
-					InputStream in = new BufferedInputStream(
-							Imageurl.openStream());
+					history.put(message, createTime.getTime());
 
-					picture(message, in);
-					in.close();
+					try {
+						if (message.length() < 140
+								&& !oneObject.has("image_url")) {
+							twitter(message);
+						} else if (oneObject.has("image_url")) {
+							URL Imageurl = new URL(message);
+							InputStream in = new BufferedInputStream(
+									Imageurl.openStream());
+
+							picture(message, in);
+							in.close();
+						}
+					} catch (Exception ex) {
+						log("Post Ex: " + ex);
+						//Mostly twitter duplicate errors
+					}
 				}
 
 			}
 
 		} catch (Exception e) {
-			log("Parse Exception: " + e);
+			log("Main Parse Exception: " + e);
 		}
 	}
 
 	public static void picture(String message, InputStream bild)
 			throws TwitterException {
 
-		if (history.contains(message))
-			return;
-
-		history.add(message);
-
 		Twitter twitter = TwitterFactory.getSingleton();
 
-		StatusUpdate status = new StatusUpdate("Jodel Bild"); // message would
-																// only contain
-																// a timestamp
+		StatusUpdate status = new StatusUpdate("Jodel Bild");
 		status.setMedia("bild.png", bild); // set the image to be uploaded here.
-		twitter.updateStatus(status);
 
+		if (!DEBUG)
+			twitter.updateStatus(status);
+
+		log("Posted Pic: " + message);
+	}
+
+	public static void twitter(String message) throws TwitterException {
+		Twitter twitter = TwitterFactory.getSingleton();
+
+		if (!DEBUG)
+			twitter.updateStatus(message);
+		
 		log("Posted: " + message);
 	}
 
-	public static void twitter(String message) {
-
+	private static void twitterLogin() {
+		Twitter twitter = TwitterFactory.getSingleton();
 		try {
+			// get request token.
+			// this will throw IllegalStateException if access token is
+			// already available
+			RequestToken requestToken = twitter.getOAuthRequestToken();
+			log("Got request token.");
+			log("Request token: " + requestToken.getToken());
+			log("Request token secret: " + requestToken.getTokenSecret());
+			AccessToken accessToken = null;
 
-			Twitter twitter = TwitterFactory.getSingleton();
-
-			try {
-				// get request token.
-				// this will throw IllegalStateException if access token is
-				// already available
-				RequestToken requestToken = twitter.getOAuthRequestToken();
-				log("Got request token.");
-				log("Request token: " + requestToken.getToken());
-				log("Request token secret: " + requestToken.getTokenSecret());
-				AccessToken accessToken = null;
-
-				BufferedReader br = new BufferedReader(new InputStreamReader(
-						System.in));
-				while (null == accessToken) {
-					String pin = br.readLine();
-					try {
-						if (pin.length() > 0) {
-							accessToken = twitter.getOAuthAccessToken(
-									requestToken, pin);
-						} else {
-							accessToken = twitter
-									.getOAuthAccessToken(requestToken);
-						}
-					} catch (TwitterException te) {
-						if (401 == te.getStatusCode()) {
-							System.out
-									.println("Unable to get the access token.");
-						} else {
-							te.printStackTrace();
-						}
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					System.in));
+			while (null == accessToken) {
+				String pin = br.readLine();
+				try {
+					if (pin.length() > 0) {
+						accessToken = twitter.getOAuthAccessToken(requestToken,
+								pin);
+					} else {
+						accessToken = twitter.getOAuthAccessToken(requestToken);
+					}
+				} catch (TwitterException te) {
+					if (401 == te.getStatusCode()) {
+						System.out.println("Unable to get the access token.");
+					} else {
+						te.printStackTrace();
 					}
 				}
-				log("Got access token.");
-				log("Access token: " + accessToken.getToken());
-				log("Access token secret: " + accessToken.getTokenSecret());
-			} catch (IllegalStateException ie) {
-				// access token is already available, or consumer key/secret is
-				// not set.
-				if (!twitter.getAuthorization().isEnabled()) {
-					log("OAuth consumer key/secret is not set.");
-					System.exit(-1);
-				}
 			}
+			log("Got access token.");
+			log("Access token: " + accessToken.getToken());
+			log("Access token secret: " + accessToken.getTokenSecret());
+		} catch (Exception ex) {
+			// access token is already available, or consumer key/secret is
+			// not set.
+			if (!twitter.getAuthorization().isEnabled()) {
+				log("OAuth consumer key/secret is not set.");
+				System.exit(-1);
 
-			if (history.contains(message))
-				return;
-
-			history.add(message);
-			twitter.updateStatus(message);
-			log("Posted: " + message);
-
-		} catch (TwitterException te) {
-			te.printStackTrace();
-			log("Failed to get timeline: " + te.getMessage());
-			// System.exit(-1);
-		} catch (IOException ioe) {
-			ioe.printStackTrace();
-			log("Failed to read the system input.");
-			// System.exit(-1);
+			}
+			log("Twitter ex: " + ex);
 		}
+	}
+
+	//method is used to clean the history for long running applications, prevents memory leaks ^^
+	private static void cleanHistory() {
+		Date now = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeZone(TimeZone.getTimeZone("GMT"));
+		cal.setTime(now);
+
+		for (String key : history.keySet()) {
+			// *2 just too be safe
+			boolean tooOld = (history.get(key) - now.getTime()) > crawelTimespan * 2;
+
+			if (tooOld)
+				history.remove(key);
+		}
+
 	}
 
 	public static PrintWriter fileStream;
 
-	@SuppressWarnings("deprecation")
 	public static void log(String line) {
-		Date now = new Date();
+		Calendar cal = Calendar.getInstance();
+		cal.setTimeZone(TimeZone.getTimeZone("GMT"));
+		
 		line = String
-				.format("%d:%d %s", now.getHours(), now.getMinutes(), line);
+				.format("%02d:%02d %s", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), line);
 
 		System.out.println(line);
 

@@ -1,1 +1,2 @@
-3:13 Started knbot
+06:52 Started knbot
+06:52 Twitter ex: java.lang.IllegalStateException: Access token already available.
