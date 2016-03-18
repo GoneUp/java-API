@@ -27,7 +27,8 @@ import twitter4j.conf.*;
 
 public class Crawler {
 
-	public static long crawelTimespan = 10 * 60 * 1000; // 10 min
+	public static long crawelTimespan;//timespan to parse in history
+	public static long waittime = 5 * 60 * 1000; //5 min, wait time for next http request
 	public static Jodel client;
 	public static String uid = "";
 	public static String accessToken = "";
@@ -37,11 +38,24 @@ public class Crawler {
 			48.1410, "DE");
 	public static JodelLocation kn = new JodelLocation("Konstanz", 9.171299,
 			47.667856, "DE");
+	
 
 	private static boolean DEBUG = false;
 	
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
+		
+		
+		if (System.getProperty("debug") != null) {
+			DEBUG = Boolean.parseBoolean(System.getProperty("debug"));
+		}
+		
+		if (System.getProperty("waittime") != null) {
+			//convert to minutens
+			waittime = Integer.parseInt(System.getProperty("waittime")) * 60 * 1000; 
+		}
+		crawelTimespan = waittime *2;
+		
 		try {
 
 			if (args.length == 1) {
@@ -63,7 +77,7 @@ public class Crawler {
 			while (true) {
 				jodelFetcher();
 				cleanHistory();
-				Thread.sleep(20000);
+				Thread.sleep(waittime);
 			}
 
 		} catch (Exception ex) {
@@ -167,6 +181,8 @@ public class Crawler {
 			// get request token.
 			// this will throw IllegalStateException if access token is
 			// already available
+			if (twitter.getAuthorization().isEnabled()) return;
+			
 			RequestToken requestToken = twitter.getOAuthRequestToken();
 			log("Got request token.");
 			log("Request token: " + requestToken.getToken());

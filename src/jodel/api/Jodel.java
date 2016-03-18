@@ -65,7 +65,7 @@ public class Jodel {
 	public JSONObject getPosts(JodelLocation loc) throws Exception{
 		//GET /api/v2/posts/location/combo?lat=47.6750029&lng=9.1720287
 		Formatter formatter = new Formatter(Locale.US);
-		URL url = new URL(formatter.format("http://api.go-tellm.com/api/v2/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng).toString());
+		URL url = new URL(formatter.format("https://api.go-tellm.com/api/v2/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng).toString());
 		
 		HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 		urlConnection.setRequestProperty("User-Agent", "Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)");

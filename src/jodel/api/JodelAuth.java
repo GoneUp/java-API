@@ -54,12 +54,12 @@ public class JodelAuth {
 		String charset = StandardCharsets.UTF_8.name(); 
 		System.out.println(content);
 		
-		URL url = new URL("http://api.go-tellm.com/api/v2/users/");
+		URL url = new URL("https://api.go-tellm.com/api/v2/users/");
 		HttpURLConnection urlConnection = (HttpURLConnection) url
 				.openConnection();
 		urlConnection.setDoOutput(true); 
 		urlConnection.setRequestMethod("POST");
-		urlConnection.setRequestProperty("User-Agent", "Jodel/65000 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)");
+		urlConnection.setRequestProperty("User-Agent", "Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)");
 		urlConnection.setRequestProperty("Content-Type", "application/json;charset=" + charset);
 
 		try (OutputStream output = urlConnection.getOutputStream()) {
