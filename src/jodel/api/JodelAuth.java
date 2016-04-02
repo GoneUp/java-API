@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import jodel.RandomString;
@@ -25,7 +26,10 @@ public class JodelAuth {
 	//{"access_token":"xx","refresh_token":"c284d121-2ce1-4358-955e-95ae45a2c66c","token_type":"bearer","expires_in":604800,"expiration_date":1453677510,"distinct_id":"5695fd1f8a22f0d304bbabc0","returning":true}
 
 	public static final String clientid = "81e8a76e-1e02-4d17-9ba0-8a7020261b26";
+	
 	private final String uid;
+	private String accessToken;
+	private long expireDate;
 
 	private JodelLocation loc;
 	
@@ -54,13 +58,20 @@ public class JodelAuth {
 		String charset = StandardCharsets.UTF_8.name(); 
 		System.out.println(content);
 		
-		URL url = new URL("https://api.go-tellm.com/api/v2/users/");
+		URL url = new URL("http://api.go-tellm.com/api/v2/users/");
 		HttpURLConnection urlConnection = (HttpURLConnection) url
 				.openConnection();
 		urlConnection.setDoOutput(true); 
 		urlConnection.setRequestMethod("POST");
 		urlConnection.setRequestProperty("User-Agent", "Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)");
 		urlConnection.setRequestProperty("Content-Type", "application/json;charset=" + charset);
+		
+		//x headers
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		urlConnection.setRequestProperty("X-Timestamp", sdf.format(new Date()));
+		urlConnection.setRequestProperty("X-Client-Type", "android_4.3.7");
+		urlConnection.setRequestProperty("X-Api-Version", "0.1");
+		urlConnection.setRequestProperty("X-Authorization", "HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E");
 
 		try (OutputStream output = urlConnection.getOutputStream()) {
 		    output.write(content.getBytes(charset));
@@ -77,12 +88,24 @@ public class JodelAuth {
 		}
 		reader.close();
 		String result = sb.toString();
-
-		JSONObject jObject = new JSONObject(result);
-		
 		System.out.println(result);
+		
+		JSONObject jObject = new JSONObject(result);		
+		expireDate = jObject.getInt("expiration_date");
+		accessToken = jObject.getString("access_token");
 		return jObject.getString("access_token");
 		
+	}
+	
+	public String getToken() throws Exception{
+		if (accessToken.isEmpty() || isExpired())
+			RequestAccessToken();
+		return 	accessToken;
+	}
+	
+	
+	public boolean isExpired(){
+		return System.currentTimeMillis() > expireDate;
 	}
 	
 
