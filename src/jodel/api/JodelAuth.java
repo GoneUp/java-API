@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import jodel.Crawler;
 import jodel.RandomString;
 
 import org.json.JSONArray;
@@ -28,7 +29,7 @@ public class JodelAuth {
 	public static final String clientid = "81e8a76e-1e02-4d17-9ba0-8a7020261b26";
 	
 	private final String uid;
-	private String accessToken;
+	private String accessToken = "";
 	private long expireDate;
 
 	private JodelLocation loc;
@@ -47,18 +48,20 @@ public class JodelAuth {
 	}
 	
 	public String RequestAccessToken() throws IOException, JSONException{
+		//content
 		JSONObject jsonLoc = loc.toJSONObj();
 	
 		JSONObject jsonReq = new JSONObject();
 		jsonReq.put("client_id", clientid);
 		jsonReq.put("device_uid", uid);		
 		jsonReq.put("location", jsonLoc);
-		
+
 		String content = jsonReq.toString();
 		String charset = StandardCharsets.UTF_8.name(); 
-		System.out.println(content);
+		Crawler.log(content);
 		
-		URL url = new URL("http://api.go-tellm.com/api/v2/users/");
+		//headers
+		URL url = new URL(Jodel.API_URL + "/users/");
 		HttpURLConnection urlConnection = (HttpURLConnection) url
 				.openConnection();
 		urlConnection.setDoOutput(true); 
@@ -77,6 +80,7 @@ public class JodelAuth {
 		    output.write(content.getBytes(charset));
 		}
 			
+		//response
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
 				urlConnection.getInputStream(), StandardCharsets.UTF_8));
 
@@ -90,6 +94,7 @@ public class JodelAuth {
 		String result = sb.toString();
 		System.out.println(result);
 		
+		//parse response
 		JSONObject jObject = new JSONObject(result);		
 		expireDate = jObject.getInt("expiration_date");
 		accessToken = jObject.getString("access_token");

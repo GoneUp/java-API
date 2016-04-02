@@ -53,14 +53,16 @@ public class Crawler {
 			// convert to minutens
 			waittime = Integer.parseInt(System.getProperty("waittime")) * 60 * 1000;
 		}
+		
+		if (System.getProperty("token") != null) {
+			accessToken = System.getProperty("token");
+		}
+		
 		crawelTimespan = waittime * 2;
 
 		try {
 
-			if (args.length == 1) {
-				// Preset accessToken
-				accessToken = args[0];
-			} else {
+			if (accessToken.isEmpty()) {
 				// generate random uid, get accesstoken from server
 				MessageDigest md = MessageDigest.getInstance("SHA-256");
 				md.update("test2".getBytes("UTF-8"));
@@ -84,7 +86,8 @@ public class Crawler {
 			}
 
 		} catch (Exception ex) {
-			log("Main Exception: " + ex.getStackTrace().toString());
+			log("Main Exception: " + ex.getMessage());
+			log("Stacktrace: " + ex.getStackTrace());
 		}
 	}
 
@@ -148,8 +151,9 @@ public class Crawler {
 
 			}
 
-		} catch (Exception e) {
-			log("Main Parse Exception: " + e);
+		} catch (Exception ex) {
+			log("Fetcher Exception: " + ex.getMessage());
+			ex.printStackTrace();
 		}
 	}
 

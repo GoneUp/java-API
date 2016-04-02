@@ -1,2 +1,2 @@
-16:41 Started knbot
-16:42 Main Parse Exception: java.net.ConnectException: Connection timed out: connect
+22:17 Started knbot
+22:18 {X-Timestamp=[2016-04-03T00:18:38Z], X-Client-Type=[android_4.3.7], X-Authorization=[HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E], User-Agent=[Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)], X-Api-Version=[0.1]}

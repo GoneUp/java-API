@@ -15,6 +15,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Jodel {
+	public static final String API_URL = "https://api.go-tellm.com/api/v2";
 	private String accessToken;
 	private JodelAuth auth;
 
@@ -70,7 +71,7 @@ public class Jodel {
 		String charset = StandardCharsets.UTF_8.name();
 		System.out.println(content);
 
-		URL url = new URL("http://api.go-tellm.com/api/v2/users/place");
+		URL url = new URL(API_URL + "/users/place");
 		HttpURLConnection urlConnection = createCon(url, "PUT");
 		urlConnection.setDoOutput(true);
 
@@ -91,17 +92,18 @@ public class Jodel {
 		// GET /api/v2/posts/location/combo?lat=47.6750029&lng=9.1720287
 		Formatter formatter = new Formatter(Locale.US);
 		URL url = new URL(
-				formatter.format("http://api.go-tellm.com/api/v2/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng)
+				formatter.format(API_URL + "/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng)
 						.toString());
 		HttpURLConnection urlConnection = createCon(url, "GET");
-
+		Crawler.log(urlConnection.getRequestProperties().toString());
+		
 		// get content
 		String result = parseResponse(urlConnection);
 		return new JSONObject(result);
 	}
 
 	public JSONObject getDistinctID() throws Exception {
-		URL url = new URL("https://api.go-tellm.com/api/v2/distinctID");
+		URL url = new URL(API_URL + "/distinctID");
 		HttpURLConnection urlConnection = createCon(url, "GET");
 
 		String result = parseResponse(urlConnection);
@@ -111,7 +113,7 @@ public class Jodel {
 	}
 
 	public JSONObject getPostInfo(String id) throws Exception {
-		URL url = new URL("https://api.go-tellm.com/api/v2/posts/" + id + "/");
+		URL url = new URL(API_URL + "/posts/" + id + "/");
 		HttpURLConnection urlConnection = createCon(url, "GET");
 		urlConnection.setRequestProperty("X-Authorization", "HMAC 0F7D7FA3010E92E3F68774E8CF126FA4C5851DFE");
 
@@ -131,7 +133,7 @@ public class Jodel {
 		String charset = StandardCharsets.UTF_8.name();
 		System.out.println(content);
 
-		URL url = new URL("https://api.go-tellm.com/api/v2/users/pushToken/");
+		URL url = new URL(API_URL + "/users/pushToken/");
 		HttpURLConnection urlConnection = createCon(url, "PUT");
 		urlConnection.setDoOutput(true);
 
@@ -139,18 +141,9 @@ public class Jodel {
 			output.write(content.getBytes(charset));
 		}
 
-		BufferedReader reader = new BufferedReader(
-				new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8));
-
-		StringBuilder sb = new StringBuilder();
-
-		String line = null;
-		while ((line = reader.readLine()) != null) {
-			sb.append(line + "\n");
-		}
-		reader.close();
-		Crawler.log(sb.toString());
-
+		String result = parseResponse(urlConnection);
+		Crawler.log(result);
+		
 		if (urlConnection.getResponseCode() != 204) {
 			// fail
 			Crawler.log("location put failed");
