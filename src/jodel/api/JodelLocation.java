@@ -12,11 +12,11 @@ public class JodelLocation {
 	
 	public JodelLocation(){}
 	
-	public JodelLocation(String city, double lng, double lat, String country) {
-		this.city = city;
-		this.lng = lng;
+	public JodelLocation(String country, String city, double lat, double lng) {	
 		this.country = country;
+		this.city = city;
 		this.lat = lat;
+		this.lng = lng;
 	}
 	
 	public JSONObject toJSONObj() throws JSONException{

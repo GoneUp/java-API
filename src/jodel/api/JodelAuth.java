@@ -39,7 +39,7 @@ public class JodelAuth {
 		//uid 64
 		
 		uid = new RandomString(64).nextString();
-		loc = new JodelLocation("Konstanz", 47.667856, 9.171299, "DE");
+		loc = new JodelLocation("DE", "Konstanz", 47.667856, 9.171299);
 	}
 
 	public JodelAuth(String uid, JodelLocation loc) {
@@ -96,7 +96,7 @@ public class JodelAuth {
 		
 		//parse response
 		JSONObject jObject = new JSONObject(result);		
-		expireDate = jObject.getInt("expiration_date");
+		expireDate = jObject.getInt("expiration_date") + jObject.getInt("expires_in");
 		accessToken = jObject.getString("access_token");
 		return jObject.getString("access_token");
 		
@@ -109,8 +109,8 @@ public class JodelAuth {
 	}
 	
 	
-	public boolean isExpired(){
-		return System.currentTimeMillis() > expireDate;
+	public boolean isExpired(){	
+		return (System.currentTimeMillis() / 1000) > expireDate;
 	}
 	
 

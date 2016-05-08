@@ -1,2 +1,5 @@
-22:17 Started knbot
-22:18 {X-Timestamp=[2016-04-03T00:18:38Z], X-Client-Type=[android_4.3.7], X-Authorization=[HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E], User-Agent=[Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)], X-Api-Version=[0.1]}
+22:46 Started knbot
+22:46 {"device_uid":"60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752","location":{"country":"DE","city":"Konstanz","loc_coordinates":{"lng":9.171299,"lat":47.667856},"loc_accuracy":20.1},"client_id":"81e8a76e-1e02-4d17-9ba0-8a7020261b26"}
+22:46 {X-Timestamp=[2016-05-09T00:46:03Z], X-Client-Type=[android_4.3.7], X-Authorization=[HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E], User-Agent=[Jodel/4.3.7 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)], X-Api-Version=[0.1]}
+22:46 Posted: Mädels wir können es uns ruhig eingestehen - wir sind alle Schlampen! 
+22:46 Posted: Was zur Hölle ist auf Jodel heute los? Sexualdurchfall oder was? 

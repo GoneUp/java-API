@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -36,14 +37,14 @@ public class Crawler {
 	public static String accessToken = "";
 	public static Map<String, Long> history = new TreeMap<>();
 
-	public static JodelLocation mun = new JodelLocation("Munich", 11.5727, 48.1410, "DE");
-	public static JodelLocation kn = new JodelLocation("Konstanz", 9.171299, 47.667856, "DE");
+	public static JodelLocation mun = new JodelLocation("DE", "Munich", 48.1410, 11.5727);
+	public static JodelLocation kn = new JodelLocation("DE", "Konstanz", 47.667856, 9.171299);
 
 	private static boolean DEBUG = false;
 
+
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
-		postFileOutput();
 
 		if (System.getProperty("debug") != null) {
 			DEBUG = Boolean.parseBoolean(System.getProperty("debug"));
@@ -53,26 +54,44 @@ public class Crawler {
 			// convert to minutens
 			waittime = Integer.parseInt(System.getProperty("waittime")) * 60 * 1000;
 		}
-		
+
 		if (System.getProperty("token") != null) {
 			accessToken = System.getProperty("token");
 		}
-		
+
+		if (System.getProperty("location") != null) {
+			// LAT;LNG
+			// 47.667856;9.171299
+			try {
+				String[] split = System.getProperty("location").split(":");
+				double lat = Double.parseDouble(split[0]);
+				double lng = Double.parseDouble(split[1]);
+
+				if (split.length == 2) {
+					kn = new JodelLocation("DE", "Stadt", lat, lng);
+				}
+			} catch (Exception ex) {
+				log("Location format error. Needs to the a double and in the format 'LAT;LNG'");
+			}
+		}
+
 		crawelTimespan = waittime * 2;
 
 		try {
 
 			if (accessToken.isEmpty()) {
 				// generate random uid, get accesstoken from server
+				String toEncrypt = "test2";
 				MessageDigest md = MessageDigest.getInstance("SHA-256");
-				md.update("test2".getBytes("UTF-8"));
-				uid = String.format("%064x", new java.math.BigInteger(1, md.digest()));
-
+				md.update(toEncrypt.getBytes("UTF-8"));
+				uid = String.format("%064x", new java.math.BigInteger(1, md.digest()));		
+				
 				auth = new JodelAuth(uid, kn);
 			}
 
 			if (auth != null) {
-				//pass auth object, enables auto auth referesh on expire (1wk usally)
+				// pass auth object, enables auto auth referesh on expire (1wk
+				// usally)
 				client = new Jodel(auth);
 			} else {
 				client = new Jodel(accessToken);
@@ -116,7 +135,8 @@ public class Crawler {
 			cal.setTimeZone(TimeZone.getTimeZone("GMT"));
 			cal.setTime(now);
 
-			for (int i = 0; i < jArray.length(); i++) {
+			//Reverse order --> tweets in time order
+			for (int i = jArray.length() - 1; i > 0; --i) {
 				JSONObject oneObject = jArray.getJSONObject(i);
 				// Pulling items from the array
 				String message = oneObject.getString("message");
@@ -264,51 +284,6 @@ public class Crawler {
 
 		} catch (Exception ex) {
 
-		}
-
-	}
-
-	private static void postFileOutput() {
-		try {
-			File f = new File("post");
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
-			StringBuilder sb = new StringBuilder();
-
-			String line = null;
-
-			while ((line = reader.readLine()) != null) {
-				sb.append(line + "\n");
-			}
-
-			reader.close();
-
-			JSONObject jObj = new JSONObject(sb.toString());
-			JSONArray jArray = jObj.getJSONArray("children");
-
-			PrintWriter pw = new PrintWriter(new FileOutputStream("post_out.txt"));
-			pw.append(jObj.getString("created_at"));
-			pw.append(" - ");
-			pw.append(jObj.getString("message"));
-			pw.append("\n\n");
-
-			for (int i = 0; i < jArray.length(); i++) {
-				JSONObject oneObject = jArray.getJSONObject(i);
-				// Pulling items from the array
-				String message = oneObject.getString("message");
-				String date = oneObject.getString("created_at");
-
-				pw.append(date);
-				pw.append(" - ");
-				pw.append(message);
-				pw.append("\n\n");
-			}
-
-			pw.flush();
-			pw.close();
-
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 
 	}
