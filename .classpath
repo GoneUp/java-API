@@ -10,9 +10,9 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="I:/Henry/Projekte/Eclipse/JodelBot"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="org.json-20120521.jar"/>
-	<classpathentry kind="lib" path="twitter4j-core-4.0.4.jar"/>
-	<classpathentry kind="lib" path="I:/Henry/Downloads/okio-1.6.0.jar"/>
-	<classpathentry kind="lib" path="I:/Henry/Downloads/okhttp-3.2.0.jar"/>
+	<classpathentry kind="lib" path="I:/Henry/Projekte/Eclipse/JodelBot/libs/okhttp-3.5.0.jar"/>
+	<classpathentry kind="lib" path="I:/Henry/Projekte/Eclipse/JodelBot/libs/okio-1.11.0.jar"/>
+	<classpathentry kind="lib" path="I:/Henry/Projekte/Eclipse/JodelBot/libs/org.json-20120521.jar"/>
+	<classpathentry kind="lib" path="I:/Henry/Projekte/Eclipse/JodelBot/libs/twitter4j-core-4.0.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

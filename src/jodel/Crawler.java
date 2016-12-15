@@ -28,7 +28,7 @@ import twitter4j.conf.*;
 
 public class Crawler {
 
-	public static long crawelTimespan;// timespan to parse in history
+	public static long crawelTimespan = 0;// timespan to parse in history
 	public static long waittime = 5 * 60 * 1000; // 5 min, wait time for next
 													// http request
 	public static Jodel client;
@@ -42,7 +42,6 @@ public class Crawler {
 
 	private static boolean DEBUG = false;
 
-
 	public static void main(String[] args) throws Exception {
 		log("Started knbot");
 
@@ -53,6 +52,12 @@ public class Crawler {
 		if (System.getProperty("waittime") != null) {
 			// convert to minutens
 			waittime = Integer.parseInt(System.getProperty("waittime")) * 60 * 1000;
+		}
+
+		if (System.getProperty("crawelTimespan") != null) {
+			crawelTimespan = Integer.parseInt(System.getProperty("crawelTimespan")) * 60 * 1000;
+		} else {
+			crawelTimespan = waittime * 2;
 		}
 
 		if (System.getProperty("token") != null) {
@@ -75,8 +80,6 @@ public class Crawler {
 			}
 		}
 
-		crawelTimespan = waittime * 2;
-
 		try {
 
 			if (accessToken.isEmpty()) {
@@ -84,8 +87,8 @@ public class Crawler {
 				String toEncrypt = "test2";
 				MessageDigest md = MessageDigest.getInstance("SHA-256");
 				md.update(toEncrypt.getBytes("UTF-8"));
-				uid = String.format("%064x", new java.math.BigInteger(1, md.digest()));		
-				
+				uid = String.format("%064x", new java.math.BigInteger(1, md.digest()));
+
 				auth = new JodelAuth(uid, kn);
 			}
 
@@ -114,11 +117,13 @@ public class Crawler {
 
 		try {
 			// get posts
-			JSONObject jObj = client.getPosts(kn); // Real Location is set here!
-
+			List<JSONObject> jObjs = client.getPosts(kn); // Real Location is set here!
+			JSONObject jObj = jObjs.get(0);
+			log(jObj.toString());
+			
 			JSONArray jArray = null;
 			if (jObj.has("posts"))
-				jObj.getJSONArray("posts");
+				jArray = jObj.getJSONArray("posts");
 			if (jObj.has("recent"))
 				jArray = jObj.getJSONArray("recent");
 			if (jArray == null)
@@ -135,11 +140,16 @@ public class Crawler {
 			cal.setTimeZone(TimeZone.getTimeZone("GMT"));
 			cal.setTime(now);
 
-			//Reverse order --> tweets in time order
 			for (int i = jArray.length() - 1; i > 0; --i) {
 				JSONObject oneObject = jArray.getJSONObject(i);
 				// Pulling items from the array
+				String id = oneObject.getString("post_id");
 				String message = oneObject.getString("message");
+				boolean isTeam = oneObject.getJSONObject("location").getString("name").equals("Jodel Team");
+				if (isTeam)
+					continue;
+				
+				
 				Date createTime = sdf.parse(oneObject.getString("created_at"));
 				boolean inRange = (now.getTime() - createTime.getTime()) < crawelTimespan;
 

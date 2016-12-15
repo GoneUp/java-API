@@ -10,14 +10,22 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import jodel.Crawler;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Jodel {
+	public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 	public static final String API_URL = "https://api.go-tellm.com/api/v2";
+
 	private String accessToken;
 	private JodelAuth auth;
+	private OkHttpClient client = new OkHttpClient();
 
 	public Jodel(String token) {
 		accessToken = token;
@@ -37,7 +45,7 @@ public class Jodel {
 		} else {
 			urlConnection.setRequestProperty("Authorization", "Bearer " + accessToken);
 		}
-		
+
 		// x headers
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		urlConnection.setRequestProperty("X-Timestamp", sdf.format(new Date()));
@@ -45,6 +53,34 @@ public class Jodel {
 		urlConnection.setRequestProperty("X-Api-Version", "0.1");
 		urlConnection.setRequestProperty("X-Authorization", "HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E");
 		return urlConnection;
+	}
+
+	private Request createCon(String url, String method, String body) throws Exception {
+		Request.Builder builder = new Request.Builder().url(url).addHeader("User-Agent",
+				"Jodel/4.31.0 Dalvik/2.1.0 (Linux; U; Android 6.0.1; Find7 Build/MMB29M)");
+
+		if (method.equals("GET")) {
+			builder.get();
+		} else if (method.equals("PUT")) {
+			builder.put(RequestBody.create(JSON, body));
+		} else if (method.equals("POST")) {
+			builder.post(RequestBody.create(JSON, body));
+		}
+
+		if (auth != null) {
+			builder.addHeader("Authorization", "Bearer " + auth.getToken());
+		} else {
+			builder.addHeader("Authorization", "Bearer " + accessToken);
+		}
+
+		// x headers
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		builder.addHeader("X-Timestamp", sdf.format(new Date()));
+		builder.addHeader("X-Client-Type", "android_4.31.0");
+		builder.addHeader("X-Api-Version", "0.2");
+		builder.addHeader("X-Authorization", "HMAC CDCAC434FE4363C3ADFB696ECDBECC9BCB7B421E");
+
+		return builder.build();
 	}
 
 	private String parseResponse(HttpURLConnection urlConnection) throws IOException {
@@ -58,6 +94,7 @@ public class Jodel {
 			sb.append(line + "\n");
 		}
 		reader.close();
+		urlConnection.disconnect();
 
 		return sb.toString();
 	}
@@ -88,18 +125,33 @@ public class Jodel {
 		}
 	}
 
-	public JSONObject getPosts(JodelLocation loc) throws Exception {
-		// GET /api/v2/posts/location/combo?lat=47.6750029&lng=9.1720287
-		Formatter formatter = new Formatter(Locale.US);
-		URL url = new URL(
-				formatter.format(API_URL + "/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng)
-						.toString());
-		HttpURLConnection urlConnection = createCon(url, "GET");
-		Crawler.log(urlConnection.getRequestProperties().toString());
+	public List<JSONObject> getPosts(JodelLocation loc) throws Exception {
+		List<JSONObject> results = new ArrayList<>();
 		
-		// get content
-		String result = parseResponse(urlConnection);
-		return new JSONObject(result);
+		// GET /api/v2/posts/location/combo?lat=47.6750029&lng=9.1720287
+		///posts/location?lat=%f&lng=%f"
+		Formatter formatter = new Formatter(Locale.US);
+		String url = formatter.format(API_URL + "/posts/location/combo?lat=%f&lng=%f", loc.lat, loc.lng).toString();
+
+		// first call
+		Request request = createCon(url.toString(), "GET", "");
+		Response response = client.newCall(request).execute();
+
+		String result = response.body().string();
+		results.add(new JSONObject(result));
+		
+		/*
+		for (int i = 0; i < 3; ++i){
+			String iterateUrl = url + String.format("&after=%d&limit=1000");
+			request = createCon(url.toString(), "GET", "");
+			response = client.newCall(request).execute();
+
+			result = response.body().string();
+			results.add(new JSONObject(result));
+		}
+		*/
+		
+		return results;
 	}
 
 	public JSONObject getDistinctID() throws Exception {
@@ -143,7 +195,7 @@ public class Jodel {
 
 		String result = parseResponse(urlConnection);
 		Crawler.log(result);
-		
+
 		if (urlConnection.getResponseCode() != 204) {
 			// fail
 			Crawler.log("location put failed");

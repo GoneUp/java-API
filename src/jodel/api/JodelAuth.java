@@ -98,6 +98,7 @@ public class JodelAuth {
 		JSONObject jObject = new JSONObject(result);		
 		expireDate = jObject.getInt("expiration_date") + jObject.getInt("expires_in");
 		accessToken = jObject.getString("access_token");
+		Crawler.log("Refreshed access token! " + result);
 		return jObject.getString("access_token");
 		
 	}
