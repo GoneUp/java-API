@@ -27,15 +27,29 @@ dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.5.0'
     compile 'com.squareup.okhttp3:okhttp:3.5.0'
     compile group: 'org.json', name: 'json', version: '20160810'
-    
-
-    // Declare the dependency for your favourite test framework you want to use in your tests.
-    // TestNG is also supported by the Gradle Test task. Just change the
-    // testCompile dependency to testCompile 'org.testng:testng:6.8.1' and add
-    // 'test.useTestNG()' to your build script.
-    testCompile 'junit:junit:4.12'
+    runtime files(org.gradle.internal.jvm.Jvm.current().toolsJar)
 }
 
  tasks.withType(Jar) {
         destinationDir = file("$rootDir/")
  }
+ 
+ jar {
+    manifest {
+        attributes 'Main-Class': 'jodel.Crawler'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+
+sourceCompatibility = '1.8'
+
+
+sourceSets {
+    // Note that just declaring this sourceset creates two configurations.
+    main {
+        java {
+            srcDir 'src/'
+        }
+    }
+}

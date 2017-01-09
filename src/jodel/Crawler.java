@@ -121,7 +121,7 @@ public class Crawler {
 			// get posts
 			List<JSONObject> jObjs = client.getPosts(kn); // Real Location is set here!
 			JSONObject jObj = jObjs.get(0);
-			log(jObj.toString());
+			if (DEBUG) log(jObj.toString());
 			
 			JSONArray jArray = null;
 			if (jObj.has("posts"))
