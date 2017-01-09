@@ -60,6 +60,8 @@ public class Crawler {
 			crawelTimespan = waittime * 2;
 		}
 
+		log(String.format("Arg - Debug %s, crawelTime %s, waitTime %s", DEBUG, crawelTimespan, waittime));
+		
 		if (System.getProperty("token") != null) {
 			accessToken = System.getProperty("token");
 		}
@@ -135,10 +137,9 @@ public class Crawler {
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-			Date now = new Date();
 			Calendar cal = Calendar.getInstance();
 			cal.setTimeZone(TimeZone.getTimeZone("GMT"));
-			cal.setTime(now);
+
 
 			for (int i = jArray.length() - 1; i > 0; --i) {
 				JSONObject oneObject = jArray.getJSONObject(i);
@@ -146,22 +147,26 @@ public class Crawler {
 				String id = oneObject.getString("post_id");
 				String message = oneObject.getString("message");
 				boolean isTeam = oneObject.getJSONObject("location").getString("name").equals("Jodel Team");
-				if (isTeam)
+				if (isTeam) {
+					if (DEBUG) log("TEAM SKIP " + message);
 					continue;
+				}
 				
 				
 				Date createTime = sdf.parse(oneObject.getString("created_at"));
-				boolean inRange = (now.getTime() - createTime.getTime()) < crawelTimespan;
+				boolean inRange = (cal.getTimeInMillis() - createTime.getTime()) < crawelTimespan;
 
 				if (inRange) {
+
 					// already posted?
 					if (oneObject.has("image_url"))
 						message = "http:" + oneObject.getString("image_url");
 
-					if (history.containsKey(message))
-						return;
+					if (history.containsKey(id)) {
+						continue;
+					}
 
-					history.put(message, createTime.getTime());
+					history.put(id, createTime.getTime());
 
 					try {
 						if (message.length() < 140 && !oneObject.has("image_url")) {
